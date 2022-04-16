@@ -7,6 +7,7 @@ require github.com/astaxie/beego v1.12.1
 require github.com/smartystreets/goconvey v1.6.4
 
 require (
+	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18 // indirect
