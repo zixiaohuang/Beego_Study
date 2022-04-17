@@ -9,4 +9,5 @@ func init() {
 	// 路由: url地址匹配
     beego.Router("/", &controllers.MainController{})
 	beego.Router("/abc", &controllers.MainController{})
+	beego.Router("/register", &controllers.MainController{})
 }

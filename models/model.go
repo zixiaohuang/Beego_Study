@@ -2,10 +2,11 @@ package models
 
 import (
 	"github.com/astaxie/beego"
-	_ "github.com/go-sql-driver/mysql" //需要包含驱动package
 	"github.com/astaxie/beego/orm"
+	_ "github.com/go-sql-driver/mysql" //需要包含驱动package
 )
 
+// 表的设计
 type User struct {
 	Id int
 	Name string
