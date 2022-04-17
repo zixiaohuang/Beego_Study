@@ -12,14 +12,14 @@ type MainController struct {
 }
 
 //// 对应get请求
-//func (c *MainController) Get() {
-//	// Website Email传给tpl模版
-//	c.Data["Website"] = "beego.me"
-//	c.Data["Email"] = "astaxie@gmail.com"
-//	c.TplName = "index.tpl" //模版
-//}
-
 func (c *MainController) Get() {
+	// Website Email传给tpl模版
+	c.Data["Website"] = "beego.me"
+	c.Data["Email"] = "astaxie@gmail.com"
+	c.TplName = "index.tpl" //模版
+}
+
+func (c *MainController) ShowRegister() {
 	// 插入
 	//// 1.有orm对象
 	//o := orm.NewOrm()
@@ -92,7 +92,7 @@ func (c *MainController) Get() {
 	c.TplName = "register.html"
 }
 
-func (c *MainController)Post(){
+func (c *MainController)HandleRegister(){
 	// 1.注册业务 拿到数据
 	userName := c.GetString("userName")
 	pwd := c.GetString("pwd")
@@ -101,7 +101,7 @@ func (c *MainController)Post(){
 	// 2.对数据进行校验
 	if userName == "" || pwd == "" {
 		logs.Error("数据不能为空")
-		c.Redirect("/register", 302) //302重定向
+		c.Redirect("/register", 302) //第一个参数：url地址 第二个参数： http状态码，302重定向
 		return
 	}
 	// 3.插入数据库
@@ -116,5 +116,48 @@ func (c *MainController)Post(){
 		return
 	}
 	// 4.返回登陆界面
-	c.Ctx.WriteString("注册成功")
+	// c.TplName 和 c.Redirect的区别:
+	// c.TplName 指定视图文件，同时可以给这个视图传递一些数据
+	// c.Redirect 跳转，不能传递数据 数据快
+	// 1xx:请求已经被接受，需要继续发送请求 2xx:请求成功 3xx:请求资源被转移，请求被转接
+	// 4xx:请求失败，客户端 5xx: 服务器错误
+	c.Redirect("/login", 302)
+}
+
+func (c *MainController)ShowLogin() {
+	c.TplName = "login.html"
+}
+
+func (c *MainController)HandleLogin(){
+	//c.Ctx.WriteString("这是登陆的Post请求")
+	// 登陆: 1.拿到数据
+	userName := c.GetString("userName")
+	pwd := c.GetString("pwd")
+	// 2.判断数据是否合法
+	if userName == ""|| pwd == "" {
+		logs.Info("输入数据不合法")
+		c.TplName="login.html"
+		return
+	}
+
+	// 3.查询账号密码是否正确
+	o := orm.NewOrm()
+	user := models.User{}
+	user.Name = userName
+	err := o.Read(&user, "Name")
+	if err != nil {
+		logs.Info("查询失败")
+		c.TplName = "login.html"
+		return
+	}
+
+	// 密码校验
+	if user.Pwd != pwd {
+		logs.Info("密码不正确")
+		c.TplName = "login.html"
+		return
+	}
+
+	// 4.跳转
+	c.Ctx.WriteString("欢迎您，登陆成功")
 }
