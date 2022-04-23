@@ -12,11 +12,15 @@ type MainController struct {
 }
 
 //// 对应get请求
+//func (c *MainController) Get() {
+//	// Website Email传给tpl模版
+//	c.Data["Website"] = "beego.me"
+//	c.Data["Email"] = "astaxie@gmail.com"
+//	c.TplName = "index.tpl" //模版
+//}
+
 func (c *MainController) Get() {
-	// Website Email传给tpl模版
-	c.Data["Website"] = "beego.me"
-	c.Data["Email"] = "astaxie@gmail.com"
-	c.TplName = "index.tpl" //模版
+	c.TplName = "login.html" //模版
 }
 
 func (c *MainController) ShowRegister() {
@@ -95,7 +99,7 @@ func (c *MainController) ShowRegister() {
 func (c *MainController)HandleRegister(){
 	// 1.注册业务 拿到数据
 	userName := c.GetString("userName")
-	pwd := c.GetString("pwd")
+	pwd := c.GetString("password")
 	logs.Info(userName, pwd)
 
 	// 2.对数据进行校验
@@ -108,7 +112,7 @@ func (c *MainController)HandleRegister(){
 	o := orm.NewOrm()
 	user := models.User{}
 	user.Name = userName
-	user.Pwd = pwd
+	user.Passwd = pwd
 	_, err := o.Insert(&user)
 	if err != nil {
 		logs.Info("插入数据库失败")
@@ -132,7 +136,7 @@ func (c *MainController)HandleLogin(){
 	//c.Ctx.WriteString("这是登陆的Post请求")
 	// 登陆: 1.拿到数据
 	userName := c.GetString("userName")
-	pwd := c.GetString("pwd")
+	pwd := c.GetString("password")
 	// 2.判断数据是否合法
 	if userName == ""|| pwd == "" {
 		logs.Info("输入数据不合法")
@@ -152,12 +156,14 @@ func (c *MainController)HandleLogin(){
 	}
 
 	// 密码校验
-	if user.Pwd != pwd {
+	if user.Passwd != pwd {
 		logs.Info("密码不正确")
 		c.TplName = "login.html"
 		return
 	}
 
 	// 4.跳转
-	c.Ctx.WriteString("欢迎您，登陆成功")
+	c.Redirect("/Article/ShowArticle", 302)
+	//c.Ctx.WriteString("欢迎您，登陆成功")
 }
+
