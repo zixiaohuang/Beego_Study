@@ -6,6 +6,7 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
+	"math"
 	"path"
 	"time"
 )
@@ -14,16 +15,56 @@ type ArticleController struct {
 	beego.Controller
 }
 
-// 显示首页内容
+// 显示文章列表页
 func (c* ArticleController) ShowArticleList(){
+	// 1.查到有多少条数据
+	// 2.共几页
+	// 3.首页和末页
+	// 4.上一页和下一页
 	o := orm.NewOrm()
 	var articles []models.Article
-	_, err := o.QueryTable("Article").All(&articles)
+	qs := o.QueryTable("Article")
+	count, err := qs.Count() // 返回数据条目数
+	// 获取总页数
+	pageSize := 1
+
+	//获取本次查询的页码
+	pageIndex, err := c.GetInt("pageIndex")
+	if err != nil {
+		//若未获取到页码，设置默认页码1
+		pageIndex = 1
+	}
+	searchStart := pageSize * (pageIndex - 1)
+	// 分页取
+	// 好处：1.防止一次性读取太多数据到内存，导致卡顿，提高网页浏览速度
+	_, err = qs.Limit(pageSize, searchStart).All(&articles)// 1.pageSize 一页显示多少 2.start 起始位置
+	//_, err = qs.All(&articles) // select * from Article
 	if err != nil {
 		logs.Error("查询所有文章信息出错")
 		return
 	}
+	// 得出总页
+	pageCount := int(math.Ceil(float64(count) / float64(pageSize))) // 向上取整
+	if err != nil {
+		logs.Error("查询所有文章条数出错")
+		return
+	}
 	logs.Info(articles)
+	logs.Info(count)
+
+	// 定义页码按钮启动状态
+	enablelast, enablenext := true, true
+	if pageIndex == 1 {
+		enablelast = false
+	}
+	if pageIndex == pageCount {
+		enablenext = false
+	}
+	c.Data["count"] = count
+	c.Data["EnableNext"] = enablenext
+	c.Data["EnableLast"] = enablelast
+	c.Data["pageCount"] = pageCount
+	c.Data["pageIndex"] = pageIndex
 	c.Data["articles"] = articles
 	c.TplName = "index.html"
 }
@@ -42,7 +83,6 @@ func (c* ArticleController) ShowAddArticle() {
 	}
 	//c.Data["username"] = c.GetSession("username")
 	c.TplName = "add.html"
-
 }
 
 // 处理上传的图片
