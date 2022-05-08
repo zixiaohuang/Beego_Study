@@ -14,6 +14,7 @@
                     return false
                 }
             })
+            // js 实现下拉框发送选择类型
             $("#select").change(function(){
                 $("#form").submit()
             })
@@ -34,7 +35,7 @@
                     <option >全部类型</option>
 
                     {{range .articletypes}}   
-                    <!-- 此处使用了模板函数 -->
+                    <!-- 此处使用了模板函数 传送对应选择的类型-->
                             <option {{if eq .TypeName $.typename}} selected {{end}} >{{.TypeName}}</option>
                     {{end}}
                 </select>

@@ -12,7 +12,7 @@ type User struct {
 	Id int
 	Name string `orm:"unique"` // 全局唯一
 	Passwd string
-	Articles []*Article `orm:"rel(m2m)"` // ManyToMany relation
+	Articles []*Article `orm:"rel(m2m)"` // ManyToMany relation 多对多关系
 }
 
 // 文章结构体
@@ -28,13 +28,13 @@ type Article struct {
 	//beego没有使用mysql的原生时间戳，而是自行打时间戳
 	// mysql时间设置有两种: date datetime beego为time.time
 	ArticleType *ArticleType `orm:"rel(fk)"` // RealForeignKey relation
-	Users       []*User      `orm:"reverse(many)"`
+	Users       []*User      `orm:"reverse(many)"` // 跟rel(m2m)对应， mysql会另外创建一个关系表
 }
 
 type ArticleType struct {
 	Id       int        `orm:"pk;auto"`
 	TypeName string     `orm:"size(20)"`
-	Articles []*Article `orm:"reverse(many)"`
+	Articles []*Article `orm:"reverse(many)"` // 跟rel(fk)相对应，形成一对多关系
 }
 
 // orm作用：1.能够通过对象操作相应的数据库表 2.能够通过结构体对象生成对应的数据库表

@@ -13,7 +13,7 @@ func main() {
 	beego.Run()
 }
 
-// 1. 在html定义视图函数
+// 1. 在html定义视图函数(html不支持加减)
 // 2. 后台添加代码
 // 3. 建立两个名字映射
 func getNextPage(pageindex int) int {

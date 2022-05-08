@@ -14,11 +14,13 @@ func init() {
 	//beego.Router("/login", &controllers.MainController{}, "get:ShowLogin;post:HandleLogin")
 
 	// 文章相关
-	beego.Router("/Article/ShowArticle", &controllers.ArticleController{}, "get:ShowArticleList")
+	beego.Router("/Article/ShowArticle", &controllers.ArticleController{}, "get:ShowArticleList;post:HandleTypeSelected")
 	beego.Router("/Article/AddArticle", &controllers.ArticleController{}, "get:ShowAddArticle;post:HandleAddArticle")
 	beego.Router("/Article/content", &controllers.ArticleController{}, "get:ShowContent")
 	beego.Router("/Article/UpdateArticle", &controllers.ArticleController{}, "get:ShowUpdate;post:HandleUpdate")
 	beego.Router("/Article/DeleteArticle", &controllers.ArticleController{}, "get:HandleDelete")
 
+	//定义路由：添加文章类型
+	beego.Router("/Article/AddArticleType", &controllers.ArticleController{}, "get:ShowAddType;post:HandleAddType")
 }
 

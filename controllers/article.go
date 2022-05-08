@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"beego_Study/models"
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
@@ -22,11 +24,21 @@ func (c* ArticleController) ShowArticleList(){
 	// 3.首页和末页
 	// 4.上一页和下一页
 	o := orm.NewOrm()
-	var articles []models.Article
+	//创建文章表查询器，但不查询
 	qs := o.QueryTable("Article")
-	count, err := qs.Count() // 返回数据条目数
-	// 获取总页数
-	pageSize := 1
+	var articles []models.Article  //qs.All(&articles) //select * from article
+
+	//获取类型数据
+	var articletypes []models.ArticleType
+	o.QueryTable("ArticleType").All(&articletypes)
+	var buffer bytes.Buffer
+	enc := gob.NewEncoder(&buffer)
+	enc.Encode(articletypes)
+
+
+	//count, err := qs.Count() // 返回数据条目数
+	//定义每页大小，即本次请求的条数
+	pageSize := 6
 
 	//获取本次查询的页码
 	pageIndex, err := c.GetInt("pageIndex")
@@ -35,14 +47,40 @@ func (c* ArticleController) ShowArticleList(){
 		pageIndex = 1
 	}
 	searchStart := pageSize * (pageIndex - 1)
-	// 分页取
-	// 好处：1.防止一次性读取太多数据到内存，导致卡顿，提高网页浏览速度
-	_, err = qs.Limit(pageSize, searchStart).All(&articles)// 1.pageSize 一页显示多少 2.start 起始位置
-	//_, err = qs.All(&articles) // select * from Article
+
+	//使用文章查询器，简单获得记录总数
+	count, err := qs.RelatedSel("ArticleType").Count()
 	if err != nil {
-		logs.Error("查询所有文章信息出错")
+		fmt.Println("获取记录数错误：", err)
 		return
 	}
+	//根据查询头和查询量，开始查询数据
+	//参数1：限制获取的条数，参数2，偏移量，即开始位置
+	//qs.Limit(pageSize, searchStart).RelatedSel("ArticleType").All(&articles)
+
+	// 加入文章类型筛选，默认全部，选择类型后，再次筛选
+	selectedtype := c.GetString("select")
+	if selectedtype == "" || selectedtype == "全部类型" {
+		fmt.Println("本次GET请求全部，未加入select参数，默认全部")
+	} else {
+		count, err = qs.RelatedSel("ArticleType").Filter("ArticleType__TypeName", selectedtype).Count()
+		if err != nil {
+			fmt.Println("获取记录数错误: ", err)
+			return
+		}
+		fmt.Printf("请求类型：%v count: %v",selectedtype, count)
+		// 分页取
+		// 好处：1.防止一次性读取太多数据到内存，导致卡顿，2. 减少页面条目数，提高网页浏览速度
+		// Filter过滤器函数 相当于sql语句中的where，指定查询条件 参数1：查询字段"表名__表字段" 参数2：要匹配的值
+		// 多表查询的时候，orm使用的是惰性查询，需要使用RelatedSel关联表
+		_, err = qs.Limit(pageSize, searchStart).RelatedSel("ArticleType").Filter("ArticleType__TypeName", selectedtype).All(&articles)// 1.pageSize 一页显示多少 2.start 起始位置
+		//_, err = qs.All(&articles) // select * from Article
+		if err != nil {
+			logs.Error("查询文章信息出错")
+			return
+		}
+	}
+
 	// 得出总页
 	pageCount := int(math.Ceil(float64(count) / float64(pageSize))) // 向上取整
 	if err != nil {
@@ -60,14 +98,36 @@ func (c* ArticleController) ShowArticleList(){
 	if pageIndex == pageCount {
 		enablenext = false
 	}
+
+	fmt.Println(articletypes)
+	c.Data["typename"] = selectedtype
+	c.Data["articletypes"] = articletypes
+	c.Data["articles"] = articles
 	c.Data["count"] = count
 	c.Data["EnableNext"] = enablenext
 	c.Data["EnableLast"] = enablelast
 	c.Data["pageCount"] = pageCount
 	c.Data["pageIndex"] = pageIndex
-	c.Data["articles"] = articles
+
 	c.TplName = "index.html"
 }
+
+func (c* ArticleController) HandleTypeSelected() {
+	selectedtype := c.GetString("select")
+	articles := []models.Article{}
+	o := orm.NewOrm()
+	fmt.Println("Post select type", selectedtype)
+	o.QueryTable("article").RelatedSel("ArticleType").Filter("ArticleType__TypeName", selectedtype).All(&articles)
+	c.Data["articles"] = articles
+
+	// 文章类型下拉
+	articletypes := []models.ArticleType{}
+	o.QueryTable("article_type").All(&articletypes)
+	c.Data["articletypes"] = articletypes
+	c.Data["username"] = c.GetSession("username")
+	c.TplName = "index.html"
+}
+
 
 // 显示添加文章界面
 func (c* ArticleController) ShowAddArticle() {
@@ -270,3 +330,41 @@ func (c* ArticleController) HandleDelete() {
 	o.Delete(&article)
 	c.Redirect("/Article/ShowArticle", 302)
 }
+
+func (c* ArticleController) ShowAddType() {
+	// 读取类型表，显示数据
+	c.TplName = "addType.html"
+	var types []models.ArticleType
+	o := orm.NewOrm()
+	_, err := o.QueryTable("article_type").All(&types)
+	if err != nil {
+		logs.Error("查询类型错误")
+		return
+	}
+	c.Data["types"] = types
+
+}
+
+
+func (c *ArticleController) HandleAddType() {
+	var articleType models.ArticleType
+	// 获取数据, 判断数据
+	if articleType.TypeName = c.GetString("typeName"); articleType.TypeName == "" {
+		fmt.Println("类型不能为空")
+		c.Redirect("/Article/AddArticleType", 302)
+		return
+	}
+	fmt.Println("您输入的类型名为", articleType.Id, articleType.TypeName)
+	o := orm.NewOrm()
+	// 执行插入操作
+	_, err := o.Insert(&articleType)
+	if err != nil {
+		fmt.Println("插入数据失败", err)
+		return
+	}
+	// 展示视图
+	c.Redirect("/Article/AddArticleType", 302)
+	//插入数据库成功后，此处不更新缓存，否则需要再次请求所有类型，刷新页面时更新更合适。
+}
+
+
